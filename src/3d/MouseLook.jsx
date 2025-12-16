@@ -24,7 +24,7 @@ export default function MouseLook({ mouseState, setLocked }) {
       if (mouseState.current.pitch < minPitch) mouseState.current.pitch = minPitch
     }
 
-    const onClick = (e) => {
+    const onClick = () => {
       // request pointer lock on the canvas or body
       const el = document.querySelector('canvas') || body
       if (el && el.requestPointerLock) el.requestPointerLock()

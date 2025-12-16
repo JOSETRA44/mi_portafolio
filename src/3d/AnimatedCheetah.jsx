@@ -2,7 +2,7 @@ import React, { useRef, useEffect } from 'react'
 import { useGLTF, useAnimations } from '@react-three/drei'
 import { useFrame } from '@react-three/fiber'
 
-export default function AnimatedCheetah({ speed = 0, moving = false, ...props }) {
+export default function AnimatedCheetah({ speedRef, movingRef, ...props }) {
   const group = useRef()
   const { scene, animations } = useGLTF('/models/cheetah.glb')
   const { actions, mixer } = useAnimations(animations, group)
@@ -36,9 +36,8 @@ export default function AnimatedCheetah({ speed = 0, moving = false, ...props })
     const walkAction = findAction(['walk', 'Walk'])
     const runAction = findAction(['run', 'Run'])
 
-    // compute normalized weights
-    // walk range: 0 -> 3, run range: 3 -> 6+
-    const s = Math.max(0, speed)
+    // compute normalized weights from refs
+    const s = Math.max(0, speedRef?.current ?? 0)
     const walk = Math.max(0, Math.min(1, s / 3))
     const run = Math.max(0, Math.min(1, (s - 3) / 3))
     const dominant = Math.max(walk, run)
@@ -58,8 +57,8 @@ export default function AnimatedCheetah({ speed = 0, moving = false, ...props })
         action.enabled = true
         action.setEffectiveWeight?.(w)
         action.weight = w
-        if (!action.isRunning()) action.play()
-      } catch (e) {
+        if (!action.isRunning?.()) action.play()
+      } catch {
         // fallback to crossfade when setEffectiveWeight not available
         if (w > 0.5) action.play()
       }
@@ -82,7 +81,8 @@ export default function AnimatedCheetah({ speed = 0, moving = false, ...props })
 
     if (!actions || Object.keys(actions).length === 0) {
       const t = state.clock.getElapsedTime()
-      group.current.rotation.y += (moving ? 1.5 : 0.15) * delta
+      const mv = movingRef?.current ?? false
+      group.current.rotation.y += (mv ? 1.5 : 0.15) * delta
       group.current.position.y = Math.sin(t * 2) * 0.02
     }
   })

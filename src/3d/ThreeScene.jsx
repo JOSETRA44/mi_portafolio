@@ -7,6 +7,7 @@ import MouseLook from './MouseLook'
 import Ground from './Ground'
 import Rocks from './Rocks'
 import { EffectComposer, Bloom, ChromaticAberration, DepthOfField, Vignette } from '@react-three/postprocessing'
+import { Leva } from 'leva'
 import { BlendFunction } from 'postprocessing'
 
 export default function ThreeScene() {
@@ -49,6 +50,8 @@ export default function ThreeScene() {
           <Vignette eskil={false} offset={0.4} darkness={0.6} />
         </EffectComposer>
       </Canvas>
+        {/* Leva debug panel (controls for particles and trail are registered in their components) */}
+        <Leva collapsed={false} />
       <div className="ui-hint">WASD — mover</div>
       <div className="ui-hint pointer">
         {locked ? 'Pointer locked — Presiona Esc para salir' : 'Haz click en la escena para habilitar mirar (pointer lock)'}

@@ -2,6 +2,8 @@ import React, { useRef, useEffect } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
 import * as THREE from 'three'
 import AnimatedCheetah from './AnimatedCheetah'
+import Trail from './Trail'
+import DustParticles from './DustParticles'
 
 export default function Player(props) {
   const group = useRef()
@@ -30,6 +32,12 @@ export default function Player(props) {
   const cameraOffset = new THREE.Vector3(0, 2.2, 5)
   const target = new THREE.Vector3()
 
+  // refs to expose motion to animated cheetah and effects
+  const movingRef = useRef(false)
+  const speedRef = useRef(0)
+  const spawnRef = useRef(null) // used to signal particle spawn position (world vector)
+  const lastStepTime = useRef(0)
+
   useFrame((state, delta) => {
     if (!group.current) return
 
@@ -57,11 +65,23 @@ export default function Player(props) {
       velocity.current.lerp(new THREE.Vector3(0, 0, 0), 6 * delta)
     }
 
-      // apply movement
+    // apply movement
     group.current.position.addScaledVector(velocity.current, delta)
 
-    // speed-based visual effect (run glow)
+    // update motion refs
     const speedMag = velocity.current.length()
+    speedRef.current = speedMag
+    movingRef.current = speedMag > 0.05
+
+    // spawn particles when stepping (every fixed interval while moving)
+    const now = state.clock.getElapsedTime()
+    if (movingRef.current && now - lastStepTime.current > Math.max(0.09, 0.4 - speedMag * 0.06)) {
+      lastStepTime.current = now
+      // spawn point slightly behind player
+      spawnRef.current = group.current.position.clone().add(new THREE.Vector3(0, 0.05, -0.3).applyAxisAngle(new THREE.Vector3(0,1,0), group.current.rotation.y))
+    }
+
+    // speed-based visual effect (run glow)
     const glowScale = Math.min(1, speedMag / speed)
     if (group.current.getObjectByName) {
       const glow = group.current.getObjectByName('__run_glow')
@@ -93,26 +113,21 @@ export default function Player(props) {
     camera.lookAt(target)
   })
 
-  // add visual glow mesh behind the cheetah
+  // render single consistent structure: glow + animated cheetah
   return (
     <group ref={group} {...props} dispose={null}>
-      <mesh name="__run_glow" position={[0, 0.3, -0.6]} visible={false}>
+          <mesh name="__run_glow" position={[0, 0.3, -0.6]} visible={false}>
         <torusGeometry args={[0.32, 0.06, 8, 32]} />
         <meshStandardMaterial emissive="#ff7a18" emissiveIntensity={0} metalness={0.2} roughness={0.4} />
       </mesh>
-      <AnimatedCheetah moving={moving} speed={currentSpeed} scale={[0.8, 0.8, 0.8]} />
+      <AnimatedCheetah movingRef={movingRef} speedRef={speedRef} scale={[0.8, 0.8, 0.8]} />
+
+      {/* effects tied to player */}
+      <Trail targetRef={group} enabledRef={movingRef} speedRef={speedRef} />
+      <DustParticles spawnRef={spawnRef} enabledRef={movingRef} speedRef={speedRef} />
     </group>
   )
 }
 
-  // determine if player is moving and speed magnitude
-  const moving = velocity.current.length() > 0.05
-  const currentSpeed = velocity.current.length()
 
-  return (
-    <group ref={group} {...props} dispose={null}>
-      <AnimatedCheetah moving={moving} speed={currentSpeed} scale={[0.8, 0.8, 0.8]} />
-    </group>
-  )
-}
 
