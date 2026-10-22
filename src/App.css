@@ -32,6 +32,12 @@
   border: 1px solid rgba(255,255,255,0.03);
 }
 
+.scene-loading {
+  min-height: 70vh;
+  display: grid;
+  place-items: center;
+}
+
 .ui-hint {
   backdrop-filter: blur(6px) saturate(120%);
 }
