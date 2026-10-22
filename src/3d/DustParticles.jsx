@@ -1,34 +1,23 @@
-import React, { useRef, useMemo } from 'react'
-import { useControls } from 'leva'
+import React, { useRef, useMemo, useEffect } from 'react'
 import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
 
 // Simple instanced particle system: spawns small particles behind the player when running
-export default function DustParticles({ count = 24, spawnRef, enabledRef, speedRef }) {
+export default function DustParticles({ count = 24, spawnRef, enabledRef, speedRef, color = '#f3d7b6' }) {
   const meshRef = useRef()
   const pool = useRef([])
   const dummyRef = useRef(new THREE.Object3D())
 
-  // initialize pool
-  if (pool.current.length === 0) {
-    for (let i = 0; i < count; i++) {
-      pool.current.push({ pos: new THREE.Vector3(), vel: new THREE.Vector3(), life: 0, size: 1, active: false, maxLife: 0 })
-    }
-  }
-
-  // instanced life attribute buffer
-  const lifeArray = useMemo(() => new Float32Array(count).fill(0), [count])
-
-  const ctrl = useControls('DustParticles', {
-    enabled: true,
-    color: '#f3d7b6',
-    intensity: { value: 1, min: 0, max: 3, step: 0.05 },
-    sizeMult: { value: 1, min: 0.2, max: 2, step: 0.05 }
-  })
+  const lifeArrayRef = useRef(null)
+  useEffect(() => {
+    pool.current = Array.from({ length: count }, () => ({ pos: new THREE.Vector3(), vel: new THREE.Vector3(), life: 0, size: 1, active: false, maxLife: 0 }))
+    lifeArrayRef.current = new Float32Array(count)
+    meshRef.current.geometry.setAttribute('aLife', new THREE.InstancedBufferAttribute(lifeArrayRef.current, 1))
+  }, [count])
 
   const particleMat = useMemo(() => {
     return new THREE.ShaderMaterial({
-      uniforms: { uColor: { value: new THREE.Color(ctrl.color) } },
+      uniforms: { uColor: { value: new THREE.Color(color) } },
       vertexShader: `
         attribute float aLife;
         varying float vLife;
@@ -50,16 +39,19 @@ export default function DustParticles({ count = 24, spawnRef, enabledRef, speedR
       depthWrite: false,
       blending: THREE.AdditiveBlending
     })
-  }, [ctrl.color])
+  }, [color])
+
+  useEffect(() => () => particleMat.dispose(), [particleMat])
 
   useFrame((state, delta) => {
-    if (!meshRef.current) return
+    if (!meshRef.current || !lifeArrayRef.current) return
+    const lifeArray = lifeArrayRef.current
 
     // spawn particles when enabled and spawnRef indicates a step
-    if (enabledRef?.current && spawnRef?.current && ctrl.enabled) {
+    if (enabledRef?.current && spawnRef?.current) {
       // spawn count scaled by speed
       const sp = speedRef?.current ?? 0
-      const spawnCount = Math.min(12, Math.max(1, Math.round((1 + sp * 4) * ctrl.intensity)))
+      const spawnCount = Math.min(12, Math.max(1, Math.round(1 + sp * 4)))
       for (let s = 0; s < spawnCount; s++) {
         const p = pool.current.find((x) => !x.active)
         if (!p) break
@@ -70,7 +62,7 @@ export default function DustParticles({ count = 24, spawnRef, enabledRef, speedR
         const base = spawnRef.current
         p.pos.set(base.x + (Math.random() - 0.5) * 0.35, base.y + 0.02, base.z + (Math.random() - 0.5) * 0.35)
         p.vel.set((Math.random() - 0.5) * (0.6 + sp * 0.6), 0.3 + Math.random() * (0.6 + sp * 0.6), (Math.random() - 0.5) * (0.6 + sp * 0.6))
-        p.size = (0.02 + Math.random() * 0.06 + sp * 0.02) * ctrl.sizeMult
+        p.size = 0.02 + Math.random() * 0.06 + sp * 0.02
       }
       spawnRef.current = null
     }
@@ -81,13 +73,11 @@ export default function DustParticles({ count = 24, spawnRef, enabledRef, speedR
     for (let i = 0; i < pool.current.length; i++) {
       const p = pool.current[i]
       if (!p.active) {
-        lifeArray[i] = 0
         continue
       }
       p.life -= delta
       if (p.life <= 0) {
         p.active = false
-        lifeArray[i] = 0
         continue
       }
       // simple physics
@@ -106,7 +96,6 @@ export default function DustParticles({ count = 24, spawnRef, enabledRef, speedR
     if (meshRef.current.instanceMatrix) meshRef.current.instanceMatrix.needsUpdate = true
     // update instanced life attribute
     if (meshRef.current.geometry) {
-      meshRef.current.geometry.setAttribute('aLife', new THREE.InstancedBufferAttribute(lifeArray, 1))
       meshRef.current.geometry.attributes.aLife.needsUpdate = true
     }
   })
