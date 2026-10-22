@@ -14,6 +14,8 @@ export default function Player(props) {
 
   useEffect(() => {
     const handleDown = (e) => {
+      if (e.target instanceof HTMLElement && e.target.closest('input, textarea, select, [contenteditable="true"]')) return
+      if (['w', 'a', 's', 'd'].includes(e.key.toLowerCase())) e.preventDefault()
       keys.current[e.key.toLowerCase()] = true
     }
     const handleUp = (e) => {
@@ -21,15 +23,18 @@ export default function Player(props) {
     }
     window.addEventListener('keydown', handleDown)
     window.addEventListener('keyup', handleUp)
+    const clearKeys = () => { keys.current = {} }
+    window.addEventListener('blur', clearKeys)
     return () => {
       window.removeEventListener('keydown', handleDown)
       window.removeEventListener('keyup', handleUp)
+      window.removeEventListener('blur', clearKeys)
     }
   }, [])
 
   // camera follow logic
   const { camera } = useThree()
-  const cameraOffset = new THREE.Vector3(0, 2.2, 5)
+  const cameraOffset = new THREE.Vector3(0, 2.2, -5)
   const target = new THREE.Vector3()
 
   // refs to expose motion to animated cheetah and effects
@@ -54,15 +59,15 @@ export default function Player(props) {
       const angle = Math.atan2(direction.current.x, direction.current.z)
       // rotate smoothly towards angle
       const currentY = group.current.rotation.y
-      const diff = angle - currentY
+      const diff = Math.atan2(Math.sin(angle - currentY), Math.cos(angle - currentY))
       group.current.rotation.y += diff * Math.min(12 * delta, 1)
 
       // forward based on facing
       const forwardVec = new THREE.Vector3(0, 0, 1).applyAxisAngle(new THREE.Vector3(0, 1, 0), group.current.rotation.y)
-      velocity.current.lerp(forwardVec.multiplyScalar(speed), 8 * delta)
+      velocity.current.lerp(forwardVec.multiplyScalar(speed), Math.min(8 * delta, 1))
     } else {
       // damping
-      velocity.current.lerp(new THREE.Vector3(0, 0, 0), 6 * delta)
+      velocity.current.multiplyScalar(Math.max(0, 1 - 6 * delta))
     }
 
     // apply movement
@@ -106,7 +111,7 @@ export default function Player(props) {
     const desiredCamPos = group.current.position.clone().add(offsetRotated)
     desiredCamPos.y += pitchOffset
 
-    camera.position.lerp(desiredCamPos, 6 * delta)
+    camera.position.lerp(desiredCamPos, Math.min(6 * delta, 1))
 
     // camera look at player but consider pitch
     target.copy(group.current.position).add(new THREE.Vector3(0, 1.2 + Math.sin(pitch) * 0.8, 0))
@@ -115,6 +120,7 @@ export default function Player(props) {
 
   // render single consistent structure: glow + animated cheetah
   return (
+    <>
     <group ref={group} {...props} dispose={null}>
           <mesh name="__run_glow" position={[0, 0.3, -0.6]} visible={false}>
         <torusGeometry args={[0.32, 0.06, 8, 32]} />
@@ -122,10 +128,10 @@ export default function Player(props) {
       </mesh>
       <AnimatedCheetah movingRef={movingRef} speedRef={speedRef} scale={[0.8, 0.8, 0.8]} />
 
-      {/* effects tied to player */}
-      <Trail targetRef={group} enabledRef={movingRef} speedRef={speedRef} />
-      <DustParticles spawnRef={spawnRef} enabledRef={movingRef} speedRef={speedRef} />
     </group>
+    <Trail targetRef={group} enabledRef={movingRef} speedRef={speedRef} />
+    <DustParticles spawnRef={spawnRef} enabledRef={movingRef} speedRef={speedRef} />
+    </>
   )
 }
 
