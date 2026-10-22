@@ -2,8 +2,6 @@ import { useEffect } from 'react'
 
 export default function MouseLook({ mouseState, setLocked }) {
   useEffect(() => {
-    const { body } = document
-
     const onPointerLockChange = () => {
       const locked = document.pointerLockElement != null
       if (mouseState) mouseState.current.enabled = locked
@@ -24,10 +22,9 @@ export default function MouseLook({ mouseState, setLocked }) {
       if (mouseState.current.pitch < minPitch) mouseState.current.pitch = minPitch
     }
 
-    const onClick = () => {
-      // request pointer lock on the canvas or body
-      const el = document.querySelector('canvas') || body
-      if (el && el.requestPointerLock) el.requestPointerLock()
+    const onClick = (event) => {
+      const canvas = event.target.closest?.('.canvas-container canvas')
+      if (canvas && canvas.requestPointerLock) canvas.requestPointerLock()
     }
 
     document.addEventListener('pointerlockchange', onPointerLockChange)
