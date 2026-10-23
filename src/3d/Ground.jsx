@@ -1,31 +1,24 @@
-import React, { useMemo } from 'react'
+import React, { useMemo, useEffect } from 'react'
 import * as THREE from 'three'
 
 // procedural canvas texture
 function makeCanvasTexture() {
-  const size = 1024
+  const size = 512
   const canvas = document.createElement('canvas')
   canvas.width = size
   canvas.height = size
   const ctx = canvas.getContext('2d')
 
   // background
-  ctx.fillStyle = '#08121a'
+  ctx.fillStyle = '#777d58'
   ctx.fillRect(0, 0, size, size)
 
-  // radial vignette
-  const grd = ctx.createRadialGradient(size / 2, size / 2, size / 8, size / 2, size / 2, size / 1.8)
-  grd.addColorStop(0, 'rgba(20,30,50,0.0)')
-  grd.addColorStop(1, 'rgba(0,0,0,0.6)')
-  ctx.fillStyle = grd
-  ctx.fillRect(0, 0, size, size)
-
-  // subtle noise
-  for (let i = 0; i < 8000; i++) {
+  // Subtle grain makes the large plane legible without a repeating vignette.
+  for (let i = 0; i < 2000; i++) {
     const x = Math.random() * size
     const y = Math.random() * size
-    const a = (Math.random() * 0.5 + 0.02)
-    ctx.fillStyle = `rgba(255,255,255,${a})`
+    const a = Math.random() * 0.12 + 0.02
+    ctx.fillStyle = `rgba(224,205,150,${a})`
     ctx.fillRect(x, y, 1, 1)
   }
 
@@ -38,11 +31,12 @@ function makeCanvasTexture() {
 
 export default function Ground(props) {
   const tex = useMemo(() => makeCanvasTexture(), [])
+  useEffect(() => () => tex.dispose(), [tex])
 
   return (
     <mesh rotation-x={-Math.PI / 2} receiveShadow {...props}>
       <planeGeometry args={[200, 200, 1, 1]} />
-      <meshStandardMaterial map={tex} color={'#081826'} metalness={0.05} roughness={0.85} />
+      <meshStandardMaterial map={tex} color="#ffffff" metalness={0.05} roughness={0.85} />
     </mesh>
   )
 }
