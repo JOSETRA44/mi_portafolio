@@ -3,7 +3,7 @@ import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
 
 // Simple instanced particle system: spawns small particles behind the player when running
-export default function DustParticles({ count = 24, spawnRef, enabledRef, speedRef, color = '#f3d7b6' }) {
+export default function DustParticles({ count = 40, spawnRef, enabledRef, speedRef, color = '#f3d7b6' }) {
   const meshRef = useRef()
   const pool = useRef([])
   const dummyRef = useRef(new THREE.Object3D())
@@ -51,7 +51,7 @@ export default function DustParticles({ count = 24, spawnRef, enabledRef, speedR
     if (enabledRef?.current && spawnRef?.current) {
       // spawn count scaled by speed
       const sp = speedRef?.current ?? 0
-      const spawnCount = Math.min(12, Math.max(1, Math.round(1 + sp * 4)))
+      const spawnCount = Math.min(4, Math.max(1, Math.round(1 + sp * 0.5)))
       for (let s = 0; s < spawnCount; s++) {
         const p = pool.current.find((x) => !x.active)
         if (!p) break
@@ -101,7 +101,7 @@ export default function DustParticles({ count = 24, spawnRef, enabledRef, speedR
   })
 
   return (
-    <instancedMesh ref={meshRef} args={[null, null, count]} castShadow receiveShadow>
+    <instancedMesh ref={meshRef} args={[null, null, count]} frustumCulled={false}>
       <sphereGeometry args={[1, 6, 6]} />
       <primitive object={particleMat} attach="material" />
     </instancedMesh>
