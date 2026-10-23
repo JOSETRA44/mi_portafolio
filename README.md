@@ -1,16 +1,42 @@
-# React + Vite
+# Portafolio 3D de José Gabriel
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Sitio en React y Vite con una escena 3D explorable. La información personal y los proyectos se tomaron del proyecto local `JOSETRA44` y quedaron en [`src/data/portfolio.js`](src/data/portfolio.js) para que sea fácil revisarlos y actualizarlos.
 
-Currently, two official plugins are available:
+## Desarrollo
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+Requiere Node.js 20.19+ o 22.12+.
 
-## React Compiler
+```bash
+npm ci
+npm run dev
+```
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+Verificaciones:
 
-## Expanding the ESLint configuration
+```bash
+npm run lint
+npm test
+npm run build
+```
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+El flujo de CI ejecuta las mismas verificaciones y una auditoría de dependencias en cada push y pull request.
+
+## Estructura
+
+- `src/data/portfolio.js`: contenido del perfil y tarjetas de proyectos.
+- `src/pages/`: rutas de inicio, acerca de, proyectos y contacto.
+- `src/components/`: navegación y carga progresiva de la escena.
+- `src/3d/`: controles, modelo, terreno y efectos de la escena. Este módulo se descarga al acercarse a la sección 3D.
+- `src/3d/Cheetah.jsx`: guepardo geométrico animado sin descargas adicionales.
+
+La escena ofrece movimiento relativo a la cámara con WASD o flechas, giro de cámara al arrastrar y botones táctiles para desplazarse. No bloquea el cursor. El paisaje combina árboles instanciados, colinas, rocas y terreno generado en el navegador. Si WebGL no está disponible, muestra una alternativa de texto. La preferencia del sistema para reducir movimiento evita cargar la animación hasta que el visitante la active.
+
+## Despliegue
+
+El sitio está configurado para GitHub Pages en `https://josetra44.github.io/mi_portafolio/`. Vite genera las rutas de recursos bajo `/mi_portafolio/` y `HashRouter` permite recargar páginas como `/#/projects` sin reglas de reescritura.
+
+El flujo [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml) compila y publica `dist` al hacer push a `main`. En **Settings → Pages → Build and deployment**, selecciona **GitHub Actions** como origen. También puedes ejecutar el flujo manualmente desde la pestaña **Actions**.
+
+## Contenido y modelo
+
+El guepardo geométrico sustituye al triángulo de prueba que antes se cargaba como modelo. Las fichas de proyectos son una selección del portafolio `JOSETRA44`.
