@@ -1,42 +1,46 @@
 import { useEffect } from 'react'
+import { useThree } from '@react-three/fiber'
 
-export default function MouseLook({ mouseState, setLocked }) {
+export default function MouseLook({ mouseState, setDragging }) {
+  const { gl } = useThree()
+
   useEffect(() => {
-    const onPointerLockChange = () => {
-      const locked = document.pointerLockElement != null
-      if (mouseState) mouseState.current.enabled = locked
-      if (setLocked) setLocked(locked)
+    const canvas = gl.domElement
+    let lastX = 0
+    let lastY = 0
+    const onPointerDown = (event) => {
+      if (event.button !== 0 && event.pointerType === 'mouse') return
+      canvas.focus()
+      canvas.setPointerCapture(event.pointerId)
+      lastX = event.clientX
+      lastY = event.clientY
+      mouseState.current.dragging = true
+      setDragging(true)
     }
-
-    const onMouseMove = (e) => {
-      if (!mouseState.current.enabled) return
-      const movementX = e.movementX || 0
-      const movementY = e.movementY || 0
-      // sensitivity
-      mouseState.current.yaw -= movementX * 0.002
-      mouseState.current.pitch -= movementY * 0.002
-      // clamp pitch
-      const maxPitch = Math.PI / 3
-      const minPitch = -Math.PI / 6
-      if (mouseState.current.pitch > maxPitch) mouseState.current.pitch = maxPitch
-      if (mouseState.current.pitch < minPitch) mouseState.current.pitch = minPitch
+    const onPointerMove = (event) => {
+      if (!mouseState.current.dragging) return
+      mouseState.current.yaw -= (event.clientX - lastX) * 0.005
+      mouseState.current.pitch = Math.max(-0.3, Math.min(0.65, mouseState.current.pitch + (event.clientY - lastY) * 0.004))
+      lastX = event.clientX
+      lastY = event.clientY
     }
-
-    const onClick = (event) => {
-      const canvas = event.target.closest?.('.canvas-container canvas')
-      if (canvas && canvas.requestPointerLock) canvas.requestPointerLock()
+    const onPointerEnd = () => {
+      mouseState.current.dragging = false
+      setDragging(false)
     }
-
-    document.addEventListener('pointerlockchange', onPointerLockChange)
-    document.addEventListener('mousemove', onMouseMove)
-    document.addEventListener('click', onClick)
-
+    canvas.addEventListener('pointerdown', onPointerDown)
+    canvas.addEventListener('pointermove', onPointerMove)
+    canvas.addEventListener('pointerup', onPointerEnd)
+    canvas.addEventListener('pointercancel', onPointerEnd)
+    canvas.addEventListener('lostpointercapture', onPointerEnd)
     return () => {
-      document.removeEventListener('pointerlockchange', onPointerLockChange)
-      document.removeEventListener('mousemove', onMouseMove)
-      document.removeEventListener('click', onClick)
+      canvas.removeEventListener('pointerdown', onPointerDown)
+      canvas.removeEventListener('pointermove', onPointerMove)
+      canvas.removeEventListener('pointerup', onPointerEnd)
+      canvas.removeEventListener('pointercancel', onPointerEnd)
+      canvas.removeEventListener('lostpointercapture', onPointerEnd)
     }
-  }, [mouseState, setLocked])
+  }, [gl, mouseState, setDragging])
 
   return null
 }
