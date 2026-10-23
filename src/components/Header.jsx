@@ -1,17 +1,23 @@
-import React from 'react'
-import { Link } from 'react-router-dom'
+import { NavLink } from 'react-router-dom'
+import { profile } from '../data/portfolio'
+
+const links = [
+  { to: '/', label: 'Inicio', end: true },
+  { to: '/about', label: 'Acerca de' },
+  { to: '/projects', label: 'Proyectos' },
+  { to: '/contact', label: 'Contacto' },
+]
 
 export default function Header() {
   return (
     <header className="site-header">
-      <nav>
-        <Link to="/">Home</Link>
-        <span> · </span>
-        <Link to="/about">About</Link>
-        <span> · </span>
-        <Link to="/projects">Projects</Link>
-        <span> · </span>
-        <Link to="/contact">Contact</Link>
+      <NavLink className="brand" to="/" aria-label={`Portafolio de ${profile.shortName}, ir al inicio`}>JG<span>.</span></NavLink>
+      <nav aria-label="Navegación principal">
+        {links.map(({ to, label, end }) => (
+          <NavLink key={to} to={to} end={end} className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>
+            {label}
+          </NavLink>
+        ))}
       </nav>
     </header>
   )
